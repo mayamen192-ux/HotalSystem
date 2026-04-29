@@ -599,7 +599,9 @@ public class Hotel
         Console.WriteLine("Total Rooms: " + rooms.Count);
         Console.WriteLine("Total Bookings: " + bookings.Count);
 
+        // Count how many rooms are currently booked in case  (IsBooked == true)
         int bookedRooms = rooms.Count(r => r.IsBooked);
+        // Calculate available rooms by subtracting booked rooms from total rooms
         int availableRooms = rooms.Count - bookedRooms;
 
         Console.WriteLine("Booked Rooms: " + bookedRooms);
