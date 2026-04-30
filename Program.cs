@@ -16,11 +16,12 @@ namespace HotalSystem
         //static List<Booking> bookings = new List<Booking>();
         //static List<Hotel> hotels = new List<Hotel>();
 
-
+       
 
         //helping functions
         static public void seed()
         {
+           
             // seed data for guest
             hotel.AddGuest("Ali", "A123");
             hotel.AddGuest("Sara", "A555");
@@ -35,6 +36,8 @@ namespace HotalSystem
             hotel.BookRoom("A123", 25);
             hotel.BookRoom("A555", 32);
             hotel.BookRoom("B100", 80);
+
+           
         }
         static public void displayMenue()
         {
@@ -263,7 +266,9 @@ public class Guest
         // Property with validation
         public string FullName
         {
-            get { return fullName; }
+            get {
+            return fullName; 
+        }
             set
             {
                 if (string.IsNullOrWhiteSpace(value))
@@ -442,7 +447,7 @@ public class Hotel
         bookings = new List<Booking>();
     }
 
-  
+    //Guest Mehtods
     public void AddGuest(string name, string id)
     {
         // Check if a guest with the same National ID already exists in the list
@@ -463,7 +468,7 @@ public class Hotel
         return guests.Find(g => g.NationalID == nationalID);
     }
 
-   
+   //Room Methods
     public void AddRoom(int number, string type)
     {
         if (rooms.Any(r => r.RoomNumber == number))
@@ -512,7 +517,7 @@ public class Hotel
         }
     }
 
-  
+  //Book Methods
     public void BookRoom(string nationalID, int roomNumber)
     {
         Guest guest = FindGuest(nationalID);
