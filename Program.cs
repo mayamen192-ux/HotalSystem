@@ -234,7 +234,7 @@ namespace HotalSystem
                 // safe input handling
                 if (!int.TryParse(Console.ReadLine(), out option))
                 {
-                    Console.WriteLine("Invalid input. Please enter a number from 1 to 12.");
+                    Console.WriteLine("Invalid input. Please enter a number from 1 to 13.");
                     continue;
                 }
 
@@ -285,7 +285,7 @@ namespace HotalSystem
                         break;
 
                     default:
-                        Console.WriteLine("Invalid option. Please choose between 1 and 12.");
+                        Console.WriteLine("Invalid option. Please choose between 1 and 13.");
                         break;
 
                 }
