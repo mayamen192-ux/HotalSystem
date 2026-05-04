@@ -1,6 +1,11 @@
-﻿using System.Runtime.CompilerServices;
-using System.Xml.Linq;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
+using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HotalSystem
 {
@@ -16,29 +21,27 @@ namespace HotalSystem
         //static List<Booking> bookings = new List<Booking>();
         //static List<Hotel> hotels = new List<Hotel>();
 
-       
+
 
         //helping functions
         static public void seed()
         {
-           
-            // seed data for guest
+            // seed data for guests
             hotel.AddGuest("Ali", "A123");
             hotel.AddGuest("Sara", "A555");
             hotel.AddGuest("Ahmed", "B100");
 
-            // seed data for rooms
-            hotel.AddRoom(25, "Standard");
-            hotel.AddRoom(32, "Deluxe");
-            hotel.AddRoom(80, "Suite");
+            // seed data for rooms (now requires nightly rate)
+            hotel.AddRoom(25, "Standard", 100m);
+            hotel.AddRoom(32, "Deluxe", 150m);
+            hotel.AddRoom(80, "Suite", 300m);
 
-            // seed data for bookings
-            hotel.BookRoom("A123", 25);
-            hotel.BookRoom("A555", 32);
-            hotel.BookRoom("B100", 80);
-
-           
+            // seed data for bookings (now requires nights)
+            hotel.BookRoom("A123", 25, 2);   // Ali books room 25 for 2 nights
+            hotel.BookRoom("A555", 32, 3);   // Sara books room 32 for 3 nights
+            hotel.BookRoom("B100", 80, 1);   // Ahmed books room 80 for 1 night
         }
+
         static public void displayMenue()
         {
             Console.WriteLine("===== Grand Azure Hotel System =====");
@@ -51,7 +54,11 @@ namespace HotalSystem
             Console.WriteLine("6. Display Booked Rooms");
             Console.WriteLine("7. Search Guest by National ID");
             Console.WriteLine("8. Show Hotel Statistics");
-            Console.WriteLine("9. Exit");
+            Console.WriteLine("9. Filter Available Rooms by Type");
+            Console.WriteLine("10.Display All Guests");
+            Console.WriteLine("11.Most Expensive Active Booking");
+            Console.WriteLine("12.Guest Life time Booking Counter");
+            Console.WriteLine("13.Exit");
 
         }
        public  static void AddGuest()
@@ -87,7 +94,7 @@ namespace HotalSystem
             }
 
         }
-       public  static void AddRoom()
+        public static void AddRoom()
         {
             Console.Write("Enter Room Number: ");
             if (!int.TryParse(Console.ReadLine(), out int number))
@@ -99,25 +106,39 @@ namespace HotalSystem
             Console.Write("Enter Room Type: ");
             string type = Console.ReadLine();
 
-            hotel.AddRoom(number, type);
+            Console.Write("Enter Nightly Rate: ");
+            if (!decimal.TryParse(Console.ReadLine(), out decimal rate))
+            {
+                Console.WriteLine("Invalid nightly rate.");
+                return;
+            }
 
+            hotel.AddRoom(number, type, rate);
             Console.WriteLine("Room added successfully.");
         }
+
         public static void BookRoom()
         {
             Console.Write("Enter Guest National ID: ");
             string id = Console.ReadLine();
 
             Console.Write("Enter Room Number: ");
-
             if (!int.TryParse(Console.ReadLine(), out int roomNumber))
             {
                 Console.WriteLine("Invalid room number.");
                 return;
             }
 
-            hotel.BookRoom(id, roomNumber);
+            Console.Write("Enter Number of Nights: ");
+            if (!int.TryParse(Console.ReadLine(), out int nights))
+            {
+                Console.WriteLine("Invalid number of nights.");
+                return;
+            }
+
+            hotel.BookRoom(id, roomNumber, nights);
         }
+
         public static void CancelBooking()
         {
             Console.Write("Enter Booking ID to cancel: ");
@@ -134,10 +155,12 @@ namespace HotalSystem
         {
             hotel.DisplayAvailableRooms();
         }
+
         public static void DisplayBookedRooms()
         {
             hotel.DisplayBookedRooms();
         }
+
         public static void SearchGuestByNationalID()
         {
             Console.Write("Enter National ID: ");
@@ -158,6 +181,43 @@ namespace HotalSystem
         {
             hotel.DisplayStatistics();
         }
+        public static void FilterAvailableRoomsByType()
+        {
+            Console.Write("Enter Room Type (Single / Double / Suite): ");
+            string type = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(type))
+            {
+                Console.WriteLine("Invalid room type.");
+                return;
+            }
+
+            hotel.DisplayAvailableRoomsByType(type);
+        }
+        public static void DisplayAllGuests()
+        {
+            hotel.DisplayAllGuests();
+        }
+        public static void FindMostExpensiveBooking()
+        {
+            hotel.FindMostExpensiveBooking();
+        }
+        public static void GuestLifetimeBookingCounter()
+        {
+            Console.Write("Enter National ID: ");
+            string id = Console.ReadLine();
+
+            Guest guest = hotel.FindGuest(id);
+
+            if (guest == null)
+            {
+                Console.WriteLine("Guest not found.");
+                return;
+            }
+
+            guest.DisplayInfo();
+            Console.WriteLine("Total bookings ever made: " + guest.TotalBookingsMade);
+        }
         static void Main(string[] args)
         {
             //seed();
@@ -174,7 +234,7 @@ namespace HotalSystem
                 // safe input handling
                 if (!int.TryParse(Console.ReadLine(), out option))
                 {
-                    Console.WriteLine("Invalid input. Please enter a number from 1 to 9.");
+                    Console.WriteLine("Invalid input. Please enter a number from 1 to 12.");
                     continue;
                 }
 
@@ -205,7 +265,19 @@ namespace HotalSystem
                     case 8://show hotel statistics
                         ShowHotelStatistics();
                         break;
-                    case 9://Exit
+                    case 9://Filter Available Rooms by Type
+                        FilterAvailableRoomsByType();
+                        break;
+                    case 10://Display All Guests
+                        DisplayAllGuests();
+                        break;
+                    case 11://Most ExpensiveActive Booking
+                        FindMostExpensiveBooking();
+                        break;
+                    case 12://Guest Lifetime Booking Counter
+                        GuestLifetimeBookingCounter();
+                        break;                
+                    case 13://Exit
                         if (ConfirmExit())
                         {
                             exit = true;
@@ -213,7 +285,7 @@ namespace HotalSystem
                         break;
 
                     default:
-                        Console.WriteLine("Invalid option. Please choose between 1 and 9.");
+                        Console.WriteLine("Invalid option. Please choose between 1 and 12.");
                         break;
 
                 }
@@ -238,11 +310,11 @@ public class Guest
     private static int totalGuestsCreated = 0;
     private string nationalID;
     private string fullName;
+    private int totalBookingsMade = 0;
 
-   
 
-        // Constructor
-        public Guest(string name, string id)
+    // Constructor
+    public Guest(string name, string id)
         {
            
             FullName = name;
@@ -271,23 +343,33 @@ public class Guest
         }
             set
             {
-                if (string.IsNullOrWhiteSpace(value))
-                    throw new ArgumentException("Full name cannot be null or empty.");
+           //update 1:
+            if (string.IsNullOrWhiteSpace(value) ||value.Trim().Length < 3)
+                Console.WriteLine("Name must be at least 3 chars.");
+                
 
-                fullName = value;
+                                fullName = value;
             }
         }
+    public int TotalBookingsMade
+    {
+        get { return totalBookingsMade; }
+    }
 
-        // Static method
-        public static int GetTotalGuestsCreated()
+    // Static method
+    public static int GetTotalGuestsCreated()
         {
             return totalGuestsCreated;
         }
+    public void IncrementBookingCount()
+    {
+        totalBookingsMade++;
+    }
 
-        // Instance method
-        public void DisplayInfo()
+    // Instance method
+    public void DisplayInfo()
         {
-            Console.WriteLine("Guest Name: " + FullName);
+            Console.WriteLine("Guest Name:  " + FullName);
             Console.WriteLine("National ID: " + NationalID);
         }
     }
@@ -300,69 +382,95 @@ public class Room
     private int roomNumber;
     private string roomType;
     private bool isBooked;
+    private decimal nightlyRate;
 
-   
-        // Constructor
-        public Room(int number, string type)
+    // Constructor
+    public Room(int number, string type, decimal rate)
+    {
+        if (number <= 0)
+            throw new ArgumentException("Room number must be positive.");
+
+        if (string.IsNullOrWhiteSpace(type))
+            throw new ArgumentException("Room type cannot be null or empty.");
+
+        if (!IsValidType(type))
+            throw new ArgumentException("Invalid room type.");
+
+        if (rate <= 0)
+            throw new ArgumentException("Nightly rate must be positive.");
+
+        string norm = NormalizeType(type);
+
+        roomNumber = number;
+        roomType = norm;
+        nightlyRate = rate;
+        isBooked = false;
+    }
+
+    // Properties
+    public int RoomNumber
+    {
+        get
         {
-            if (number <= 0)
-                throw new ArgumentException("Room number must be positive.");
-
-            if (string.IsNullOrWhiteSpace(type))
-                throw new ArgumentException("Room type cannot be null or empty.");
-
-            roomNumber = number;
-            roomType = type;
-            isBooked = false;
-        }
-
-        // Properties (get only)
-        public int RoomNumber
-        {
-            get { 
             return roomNumber;
         }
-        }
-
-        public string RoomType
+    }
+    public string RoomType
+    {
+        get
+        { return roomType; }
+    }
+    public bool IsBooked
+    {
+        get
         {
-            get {
-            return roomType;
+            return
+        isBooked;
         }
-        }
-
-        public bool IsBooked
+    }
+    public decimal NightlyRate
+    {
+        get
         {
-            get { 
-            return isBooked;
-        }
-        }
-
-        // Methods
-        public bool Book()
-        {
-            if (isBooked)
-                return false;
-
-            isBooked = true;
-            return true;
-        }
-
-        public void CancelBooking()
-        {
-            isBooked = false;
-        }
-
-        public void DisplayInfo()
-        {
-            Console.WriteLine("Room Number: " + roomNumber);
-            Console.WriteLine("Room Type: " + roomType);
-            Console.WriteLine("Status: " + (isBooked ? "Booked" : "Available"));
+            return nightlyRate;
         }
     }
 
+    // Methods
+    public bool Book()
+    {
+        if (isBooked)
+            return false;
 
-/// /////////////Booking class//////////////////////////////////
+        isBooked = true;
+        return true;
+    }
+
+    public void CancelBooking()
+    {
+        isBooked = false;
+    }
+
+    public void DisplayInfo()
+    {
+        Console.WriteLine("Room Number: " + roomNumber);
+        Console.WriteLine("Room Type:   " + roomType);
+        Console.WriteLine("Nightly Rate:" + nightlyRate.ToString("C"));
+        Console.WriteLine("Status:      " + (isBooked ? "Booked" : "Available"));
+    }
+
+    // Validation helpers
+    private bool IsValidType(string type)
+    {
+        string[] validTypes = { "Standard", "Deluxe", "Suite" };
+        return validTypes.Contains(type, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private string NormalizeType(string type)
+    {
+        return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(type.ToLower());
+    }
+}
 public class Booking
 {
     // Fields
@@ -371,59 +479,46 @@ public class Booking
     private int bookingID;
     private Guest guest;
     private Room room;
+    private int nights;
+    private decimal totalCost;
 
-   
+    // Constructor
+    public Booking(Guest guest, Room room, int nights)
+    {
+        if (guest == null)
+            throw new ArgumentNullException(nameof(guest));
 
-        // Constructor
-        public Booking(Guest guest, Room room)
-        {
-            if (guest == null)
-                throw new ArgumentNullException(nameof(guest));
+        if (room == null)
+            throw new ArgumentNullException(nameof(room));
 
-            if (room == null)
-                throw new ArgumentNullException(nameof(room));
+        if (nights <= 0)
+            throw new ArgumentException("Number of nights must be positive.");
 
-            bookingID = nextBookingID++;
-            this.guest = guest;
-            this.room = room;
-        }
-
-        // Properties (get only)
-        public int BookingID
-        {
-            get { 
-            return bookingID;
-        }
-        }
-
-        public Guest Guest
-        {
-            get { 
-            return guest;
-        }
-        }
-
-        public Room Room
-        {
-            get { 
-            return room;
-        }
-        }
-
-        // Method
-        public void DisplayInfo()
-        {
-            Console.WriteLine("Booking ID: " + BookingID);
-            Console.WriteLine("Guest Name: " + Guest.FullName);
-            Console.WriteLine("Room Number: " + Room.RoomNumber);
-            Console.WriteLine("Room Type: " + Room.RoomType);
-        }
+        bookingID = nextBookingID++;
+        this.guest = guest;
+        this.room = room;
+        this.nights = nights;
+        this.totalCost = room.NightlyRate * nights;
     }
 
+    // Properties
+    public int BookingID { get { return bookingID; } }
+    public Guest Guest { get { return guest; } }
+    public Room Room { get { return room; } }
+    public int Nights { get { return nights; } }
+    public decimal TotalCost { get { return totalCost; } }
 
-
-/// /////////////Hotel class//////////////////////////////////
-
+    // Method
+    public void DisplayInfo()
+    {
+        Console.WriteLine("Booking ID:  " + BookingID);
+        Console.WriteLine("Guest Name:  " + Guest.FullName);
+        Console.WriteLine("Room Number: " + Room.RoomNumber);
+        Console.WriteLine("Room Type:   " + Room.RoomType);
+        Console.WriteLine("Nights:      " + Nights);
+        Console.WriteLine("Total Cost:  " + TotalCost.ToString("C"));
+    }
+}
 public class Hotel
 {
     // Fields
@@ -431,27 +526,22 @@ public class Hotel
     private List<Room> rooms;
     private List<Booking> bookings;
 
-    // Property (get-only)
     public string HotelName { get; private set; }
 
-    // Constructor
     public Hotel(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Hotel name cannot be empty.");
+            throw new ArgumentException(" Hotel name cannot be empty. ");
 
         HotelName = name;
-
         guests = new List<Guest>();
         rooms = new List<Room>();
         bookings = new List<Booking>();
     }
 
-    //Guest Mehtods
+    // Guest Methods
     public void AddGuest(string name, string id)
     {
-        // Check if a guest with the same National ID already exists in the list
-        // Any() returns true if at least one guest matches the condition
         if (guests.Any(g => g.NationalID == id))
         {
             Console.WriteLine("Guest with this ID already exists.");
@@ -463,13 +553,11 @@ public class Hotel
 
     public Guest FindGuest(string nationalID)
     {
-        // Search the guests list for a Guest whose NationalID matches the given value
-        // Find() returns the first matching Guest object or null if no match is found
         return guests.Find(g => g.NationalID == nationalID);
     }
 
-   //Room Methods
-    public void AddRoom(int number, string type)
+    // Room Methods
+    public void AddRoom(int number, string type, decimal rate)
     {
         if (rooms.Any(r => r.RoomNumber == number))
         {
@@ -477,48 +565,11 @@ public class Hotel
             return;
         }
 
-        rooms.Add(new Room(number, type));
+        rooms.Add(new Room(number, type, rate));
     }
 
-    public void DisplayAvailableRooms()
-    {
-        Console.WriteLine("Available Rooms:");
-
-        bool found = false;
-
-        foreach (Room r in rooms)
-        {
-            if (!r.IsBooked)
-            {
-                r.DisplayInfo();
-                Console.WriteLine("------------------------");
-                found = true;
-            }
-        }
-
-        if (!found)
-            Console.WriteLine("No available rooms.");
-    }
-
-    public void DisplayBookedRooms()
-    {
-        Console.WriteLine("Booked Rooms:");
-
-        if (bookings.Count == 0)
-        {
-            Console.WriteLine("No bookings found.");
-            return;
-        }
-
-        foreach (Booking b in bookings)
-        {
-            b.DisplayInfo();
-            Console.WriteLine("------------------------");
-        }
-    }
-
-  //Book Methods
-    public void BookRoom(string nationalID, int roomNumber)
+    // Booking Methods
+    public void BookRoom(string nationalID, int roomNumber, int nights)
     {
         Guest guest = FindGuest(nationalID);
 
@@ -542,8 +593,11 @@ public class Hotel
             return;
         }
 
-        Booking booking = new Booking(guest, room);
+        Booking booking = new Booking(guest, room, nights);
         bookings.Add(booking);
+
+        // update: increment guest booking counter
+        guest.IncrementBookingCount();
 
         Console.WriteLine("Booking successful!");
         booking.DisplayInfo();
@@ -558,6 +612,13 @@ public class Hotel
             Console.WriteLine("Booking not found.");
             return;
         }
+        // Print summary before removing
+        Console.WriteLine("Guest: "+ booking.Guest.FullName );
+        Console.WriteLine("Room : "+ booking.Room.RoomNumber+" Nights "+ booking.Nights );
+        Console.WriteLine("Cost:  " + booking.TotalCost.ToString("F3") + " OMR");
+        booking.Room.CancelBooking();
+        bookings.RemoveAll(b => b.BookingID == bookingID);
+       
 
         booking.Room.CancelBooking();
 
@@ -576,7 +637,7 @@ public class Hotel
             return;
         }
 
-        Console.WriteLine($"Bookings for {guest.FullName}:");
+        Console.WriteLine("Bookings for "+guest.FullName);
 
         bool found = false;
 
@@ -593,16 +654,115 @@ public class Hotel
         if (!found)
             Console.WriteLine("No bookings found for this guest.");
     }
+    public void DisplayAvailableRooms()
+    {
+        Console.WriteLine("===== Available Rooms =====");
 
-  
+        var availableRooms = rooms.Where(r => !r.IsBooked).ToList();
+
+        if (availableRooms.Count == 0)
+        {
+            Console.WriteLine("No available rooms.");
+            return;
+        }
+
+        foreach (var room in availableRooms)
+        {
+            room.DisplayInfo();
+            Console.WriteLine("------------------------");
+        }
+    }
+    public void DisplayBookedRooms()
+    {
+        Console.WriteLine("===== Booked Rooms =====");
+
+        var bookedRooms = rooms.Where(r => r.IsBooked).ToList();
+
+        if (bookedRooms.Count == 0)
+        {
+            Console.WriteLine("No booked rooms.");
+            return;
+        }
+
+        foreach (var room in bookedRooms)
+        {
+            room.DisplayInfo();
+            Console.WriteLine("------------------------");
+        }
+    }
+    public void DisplayAvailableRoomsByType(string type)
+    {
+        Console.WriteLine("===== Available "+ type +" Rooms =====");
+
+        bool found = false;
+
+        foreach (Room r in rooms)
+        {
+            if (!r.IsBooked && string.Equals(r.RoomType, type, StringComparison.OrdinalIgnoreCase))
+            {
+                r.DisplayInfo();
+                Console.WriteLine("------------------------");
+                found = true;
+            }
+        }
+
+        if (!found)
+        {
+            Console.WriteLine(" No available rooms of type "+ type);
+        }
+    }
+    public void DisplayAllGuests()
+    {
+        Console.WriteLine("===== All Registered Guests =====");
+
+        if (guests.Count == 0)
+        {
+            Console.WriteLine("No guests registered.");
+            return;
+        }
+
+        foreach (Guest g in guests)
+        {
+            g.DisplayInfo();
+            Console.WriteLine("------------------------");
+        }
+
+        Console.WriteLine("Total registered guests: " + guests.Count);
+    }
+    public void FindMostExpensiveBooking()
+    {
+        Console.WriteLine("===== Most Expensive Booking =====");
+
+        Booking max = null;
+
+        foreach (Booking b in bookings)
+        {
+            if (max == null || b.TotalCost > max.TotalCost)
+            {
+                max = b;
+            }
+        }
+
+        if (max != null)
+        {
+            max.DisplayInfo();
+        }
+        else
+        {
+            Console.WriteLine("No active bookings.");
+        }
+    }
+
     public void DisplayStatistics()
     {
+        decimal total = bookings.Sum(b => b.TotalCost);
+        decimal avg = bookings.Count > 0 ? total / bookings.Count : 0;
         Console.WriteLine("===== Hotel Statistics =====");
 
-        Console.WriteLine("Hotel Name: " + HotelName);
-        Console.WriteLine("Total Guests: " + guests.Count);
-        Console.WriteLine("Total Rooms: " + rooms.Count);
-        Console.WriteLine("Total Bookings: " + bookings.Count);
+        Console.WriteLine("Hotel Name:    " + HotelName);
+        Console.WriteLine("Total Guests:  " + guests.Count);
+        Console.WriteLine("Total Rooms:   " + rooms.Count);
+        Console.WriteLine("Total Bookings:" + bookings.Count);
 
         // Count how many rooms are currently booked in case  (IsBooked == true)
         int bookedRooms = rooms.Count(r => r.IsBooked);
@@ -613,6 +773,8 @@ public class Hotel
         Console.WriteLine("Available Rooms: " + availableRooms);
 
         Console.WriteLine("Total Guests Ever Created: " + Guest.GetTotalGuestsCreated());
+        Console.WriteLine("Total Revenue:  " + total.ToString("F3") + " OMR");
+        Console.WriteLine("Avg Cost/ Booking: " + avg.ToString("F3") + " OMR");
 
         Console.WriteLine("=============================");
     }
